@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-from scraper import ChurchScraper
 import os
 from dotenv import load_dotenv
 import atexit
@@ -7,114 +6,65 @@ import atexit
 load_dotenv()
 
 app = Flask(__name__)
-scraper = ChurchScraper()
 
-# Initialize Google Sheets importer and auto updater
-sheets_importer = None
-auto_updater = None
-try:
-    from sheets_importer import GoogleSheetsImporter
-    from auto_updater import ChurchDataUpdater
-    sheets_importer = GoogleSheetsImporter()
-    auto_updater = ChurchDataUpdater()
-    auto_updater.start()
-    # Register the shutdown function to stop the scheduler when the app stops
-    atexit.register(lambda: auto_updater.stop() if auto_updater else None)
-except Exception as e:
-    print("Google Sheets integration is not available:", str(e))
+# Sample data
+SAMPLE_CHURCHES = [
+    {
+        "name": "Nhà thờ Đức Bà Sài Gòn",
+        "address": "01 Công xã Paris, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh",
+        "lat": 10.7797,
+        "lng": 106.6990,
+        "mass_times": "5:30, 17:30"
+    },
+    {
+        "name": "Nhà thờ Tân Định",
+        "address": "289 Hai Bà Trưng, Phường 8, Quận 3, Thành phố Hồ Chí Minh",
+        "lat": 10.7897,
+        "lng": 106.6910,
+        "mass_times": "5:00, 17:00, 18:30"
+    },
+    {
+        "name": "Nhà thờ Huyện Sĩ",
+        "address": "1 Tôn Thất Tùng, Phạm Ngũ Lão, Quận 1, Thành phố Hồ Chí Minh",
+        "lat": 10.7703,
+        "lng": 106.6916,
+        "mass_times": "5:30, 17:00"
+    },
+    {
+        "name": "Nhà thờ Chợ Quán",
+        "address": "120 Trần Bình Trọng, Phường 3, Quận 5, Thành phố Hồ Chí Minh",
+        "lat": 10.7597,
+        "lng": 106.6832,
+        "mass_times": "5:00, 18:00"
+    },
+    {
+        "name": "Nhà thờ Thị Nghè",
+        "address": "178 Hai Bà Trưng, Đa Kao, Quận 1, Thành phố Hồ Chí Minh",
+        "lat": 10.7897,
+        "lng": 106.7010,
+        "mass_times": "5:30, 17:30, 19:00"
+    }
+]
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/search', methods=['POST'])
-def search():
-    try:
-        data = request.get_json()
-        time_slot = data.get('time_slot')
-        lat = float(data.get('lat'))
-        lng = float(data.get('lng'))
-        
-        churches = scraper.search_churches(time_slot, lat, lng)
-        return jsonify({'success': True, 'churches': churches})
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
 @app.route('/default-churches', methods=['POST'])
 def default_churches():
     try:
         data = request.get_json()
-        lat = float(data.get('lat'))
-        lng = float(data.get('lng'))
+        lat = data.get('lat', 10.7797)  # Default to Notre Dame Cathedral location
+        lng = data.get('lng', 106.6990)
         
-        # Get all churches within 5km radius
-        churches = scraper.get_nearby_churches(lat, lng, radius_km=5)
-        return jsonify({'success': True, 'churches': churches})
-    except Exception as e:
         return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/update-database', methods=['POST'])
-def update_database():
-    try:
-        new_churches = scraper.update_database()
-        return jsonify({
-            'success': True,
-            'message': f'Added {new_churches} new churches to the database'
+            "success": True,
+            "churches": SAMPLE_CHURCHES
         })
     except Exception as e:
         return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/import-from-sheets', methods=['POST'])
-def import_from_sheets():
-    if not sheets_importer or not auto_updater:
-        return jsonify({
-            'success': False,
-            'error': 'Google Sheets integration is not available'
-        }), 503
-        
-    try:
-        # Trigger an immediate update
-        auto_updater.update_data()
-        return jsonify({
-            'success': True,
-            'message': 'Successfully triggered data update from Google Sheets'
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.route('/update-status', methods=['GET'])
-def update_status():
-    if not auto_updater:
-        return jsonify({
-            'success': False,
-            'error': 'Auto updater is not available'
-        }), 503
-    
-    try:
-        # Get the next run time of the update job
-        job = auto_updater.scheduler.get_job('update_church_data')
-        next_run = job.next_run_time.astimezone(auto_updater.vietnam_tz).strftime('%Y-%m-%d %H:%M:%S')
-        
-        return jsonify({
-            'success': True,
-            'next_update': next_run
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
+            "success": False,
+            "error": str(e)
         }), 500
 
 if __name__ == '__main__':

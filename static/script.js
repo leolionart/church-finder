@@ -1,6 +1,7 @@
 let map;
 let userMarker;
 let churchMarkers = [];
+let allChurches = [];
 let selectedTime = null;
 
 // Initialize map
@@ -58,7 +59,8 @@ async function loadDefaultChurches(lat, lng) {
 
         const data = await response.json();
         if (data.success) {
-            displayChurches(data.churches);
+            allChurches = data.churches;
+            displayChurches(allChurches);
             document.getElementById('resultsTitle').textContent = 'Nhà thờ gần đây';
         }
     } catch (error) {
@@ -66,72 +68,27 @@ async function loadDefaultChurches(lat, lng) {
     }
 }
 
-// Handle search panel visibility
-function toggleSearchPanel() {
-    const searchPanel = document.getElementById('searchPanel');
-    searchPanel.classList.toggle('hidden');
-}
-
-// Handle time selection
-function initTimeSelection() {
-    const timePills = document.querySelectorAll('.time-pill');
-    const timeInput = document.getElementById('timeSlot');
-
-    timePills.forEach(pill => {
-        pill.addEventListener('click', () => {
-            // Remove active class from all pills
-            timePills.forEach(p => p.classList.remove('active'));
-            // Add active class to clicked pill
-            pill.classList.add('active');
-            // Set the time input value
-            timeInput.value = pill.dataset.time;
-            selectedTime = pill.dataset.time;
-        });
-    });
-
-    timeInput.addEventListener('change', () => {
-        selectedTime = timeInput.value;
-        // Remove active class from all pills
-        timePills.forEach(pill => pill.classList.remove('active'));
-    });
-
-    // Initialize search toggle
-    document.getElementById('searchToggle').addEventListener('click', toggleSearchPanel);
-}
-
-// Search for churches
-async function searchChurches() {
-    if (!selectedTime && !document.getElementById('timeSlot').value) {
-        alert('Vui lòng chọn giờ lễ');
+// Filter churches by time
+function filterChurches(time) {
+    if (!time) {
+        displayChurches(allChurches);
+        document.getElementById('resultsTitle').textContent = 'Nhà thờ gần đây';
         return;
     }
 
-    const timeSlot = selectedTime || document.getElementById('timeSlot').value;
-    const pos = userMarker.getLatLng();
-
-    try {
-        const response = await fetch('/search', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                time_slot: timeSlot,
-                lat: pos.lat,
-                lng: pos.lng
-            }),
+    const filteredChurches = allChurches.filter(church => {
+        if (!church.mass_times) return false;
+        const times = church.mass_times.split(', ');
+        return times.some(t => {
+            const [hour, minute] = t.split(':').map(Number);
+            const [filterHour, filterMinute] = time.split(':').map(Number);
+            return hour === filterHour && minute === filterMinute;
         });
+    });
 
-        const data = await response.json();
-        if (data.success) {
-            displayChurches(data.churches);
-            document.getElementById('resultsTitle').textContent = 
-                `Kết quả tìm kiếm (${data.churches.length})`;
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Có lỗi xảy ra khi tìm kiếm nhà thờ');
-    }
+    displayChurches(filteredChurches);
+    document.getElementById('resultsTitle').textContent = 
+        `Nhà thờ có lễ lúc ${time} (${filteredChurches.length})`;
 }
 
 // Display churches on map and in list
@@ -139,70 +96,94 @@ function displayChurches(churches) {
     // Clear existing markers
     churchMarkers.forEach(marker => marker.remove());
     churchMarkers = [];
-    
-    // Clear church list
+
+    // Clear existing list
     const churchList = document.getElementById('churchList');
     churchList.innerHTML = '';
-    
+
     if (churches.length === 0) {
-        churchList.innerHTML = '<div class="no-results"><i class="fas fa-church"></i><p>Không tìm thấy nhà thờ nào trong khoảng thời gian này</p></div>';
+        churchList.innerHTML = '<div class="no-results">Không tìm thấy nhà thờ nào có giờ lễ phù hợp</div>';
         return;
     }
 
-    churches.forEach(church => {
-        // Add marker to map
-        if (church.lat && church.lng) {
-            const marker = L.marker([church.lat, church.lng])
-                .bindPopup(`
-                    <strong>${church.name}</strong><br>
-                    ${church.address}<br>
-                    <strong>Giờ lễ:</strong> ${church.mass_times.join(', ')}
-                `)
-                .addTo(map);
-            churchMarkers.push(marker);
-        }
+    // Add new churches
+    churches.forEach((church, index) => {
+        // Create marker
+        const marker = L.marker([church.lat, church.lng], {
+            icon: L.divIcon({
+                className: 'church-marker',
+                html: '<i class="fas fa-church"></i>',
+                iconSize: [30, 30]
+            })
+        }).addTo(map);
 
-        // Add to list
-        const churchElement = document.createElement('div');
-        churchElement.className = 'church-item';
-        churchElement.innerHTML = `
-            <div class="church-image">
-                <i class="fas fa-church"></i>
-            </div>
-            <div class="church-info">
-                <h5>${church.name}</h5>
+        // Add popup to marker
+        marker.bindPopup(`
+            <div class="church-popup">
+                <h3>${church.name}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${church.address}</p>
-                <p><i class="fas fa-clock"></i> Giờ lễ: ${church.mass_times.join(', ')}</p>
-                <p><i class="fas fa-road"></i> Cách ${church.distance} km</p>
+                ${church.mass_times ? `<p><i class="fas fa-clock"></i> Giờ lễ: ${church.mass_times}</p>` : ''}
             </div>
+        `);
+
+        churchMarkers.push(marker);
+
+        // Create church card
+        const card = document.createElement('div');
+        card.className = 'church-card';
+        card.innerHTML = `
+            <h3>${church.name}</h3>
+            <p><i class="fas fa-map-marker-alt"></i> ${church.address}</p>
+            ${church.mass_times ? `<p><i class="fas fa-clock"></i> Giờ lễ: ${church.mass_times}</p>` : ''}
+            <button onclick="focusChurch(${index})" class="focus-btn">
+                <i class="fas fa-map-marked-alt"></i> Xem trên bản đồ
+            </button>
         `;
-        
-        // Add click event to center map on church
-        churchElement.addEventListener('click', () => {
-            if (church.lat && church.lng) {
-                map.setView([church.lat, church.lng], 15);
-                const marker = churchMarkers.find(m => 
-                    m.getLatLng().lat === church.lat && 
-                    m.getLatLng().lng === church.lng
-                );
-                if (marker) {
-                    marker.openPopup();
-                }
-            }
-        });
-        
-        churchList.appendChild(churchElement);
+        churchList.appendChild(card);
     });
 
-    // Fit map bounds to show all markers
+    // Fit map to show all markers if there are any
     if (churchMarkers.length > 0) {
         const group = new L.featureGroup(churchMarkers);
         map.fitBounds(group.getBounds().pad(0.1));
     }
 }
 
+// Focus on a specific church
+function focusChurch(index) {
+    const marker = churchMarkers[index];
+    if (marker) {
+        map.setView(marker.getLatLng(), 16);
+        marker.openPopup();
+    }
+}
+
+// Initialize time filter functionality
+function initTimeFilter() {
+    const timePills = document.querySelectorAll('.time-pill');
+    const clearFilterBtn = document.getElementById('clearFilter');
+
+    timePills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            // Remove active class from all pills
+            timePills.forEach(p => p.classList.remove('active'));
+            // Add active class to clicked pill
+            pill.classList.add('active');
+            // Filter churches
+            selectedTime = pill.dataset.time;
+            filterChurches(selectedTime);
+        });
+    });
+
+    clearFilterBtn.addEventListener('click', () => {
+        timePills.forEach(p => p.classList.remove('active'));
+        selectedTime = null;
+        filterChurches(null);
+    });
+}
+
 // Initialize everything when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
-    initTimeSelection();
+    initTimeFilter();
 });
