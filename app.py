@@ -12,10 +12,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+app.debug = True  # Enable debug mode
 
 # Constants
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
-RANGE_NAME = 'Sheet1!A2:F'  # Assuming headers are in row 1
+print(f"Loaded SPREADSHEET_ID: {SPREADSHEET_ID}")  # Debug print
+RANGE_NAME = "'Churches'!A2:F"  # Changed from Sheet1 to Churches and added quotes
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 # Cache variables
@@ -28,13 +30,15 @@ def get_google_sheets_service():
         # Check if we have JSON credentials in environment variable
         creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
         if creds_json:
+            print("Using credentials from environment variable")  # Debug print
             creds_info = json.loads(creds_json)
         else:
             # Fallback to service-account.json file
             creds_path = 'service-account.json'
             if not os.path.exists(creds_path):
-                print("No credentials found")
+                print("No credentials found - service-account.json is missing")  # Debug print
                 return None
+            print(f"Using credentials from {creds_path}")  # Debug print
             with open(creds_path) as f:
                 creds_info = json.load(f)
         
@@ -43,55 +47,67 @@ def get_google_sheets_service():
         service = build('sheets', 'v4', credentials=credentials)
         return service.spreadsheets()
     except Exception as e:
-        print(f"Error setting up Google Sheets service: {e}")
+        print(f"Error setting up Google Sheets service: {str(e)}")  # Debug print
+        import traceback
+        print(traceback.format_exc())  # Print full stack trace
         return None
 
 def fetch_churches_from_sheets(force_refresh=False):
     global churches_cache, last_fetch_time
     
+    print(f"Fetching churches (force_refresh={force_refresh})")  # Debug print
+    
     # Return cached data if available and not forcing refresh
     with cache_lock:
         if not force_refresh and churches_cache and last_fetch_time:
+            print("Returning cached data")  # Debug print
             return churches_cache
 
     try:
         service = get_google_sheets_service()
         if not service:
+            print("Failed to get Google Sheets service")  # Debug print
             return []
 
+        print(f"Fetching data from sheet {SPREADSHEET_ID} range {RANGE_NAME}")  # Debug print
         sheet = service.values().get(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME
         ).execute()
         values = sheet.get('values', [])
+        print(f"Fetched {len(values)} rows from sheet")  # Debug print
 
         churches = []
-        for row in values:
-            if len(row) >= 5:  # Ensure row has required fields
+        for i, row in enumerate(values):
+            if len(row) >= 6:  # Ensure row has required fields
                 try:
                     church = {
                         "name": row[0].strip(),
                         "address": row[1].strip(),
-                        "lat": float(row[2].strip()),
-                        "lng": float(row[3].strip()),
-                        "mass_times": row[4].strip(),
+                        "mass_times": row[2].strip(),
+                        "lat": float(row[4].strip()),  # Changed from index 2 to 4
+                        "lng": float(row[5].strip()),  # Changed from index 3 to 5
                     }
                     # Add last_updated if available
-                    if len(row) > 5:
-                        church["last_updated"] = row[5].strip()
+                    if len(row) > 6:
+                        church["last_updated"] = row[6].strip()
                     churches.append(church)
                 except (ValueError, IndexError) as e:
-                    print(f"Error processing row {row}: {e}")
+                    print(f"Error processing row {i+2}: {row}")  # Debug print (i+2 because we start from A2)
+                    print(f"Error details: {str(e)}")  # Debug print
                     continue
 
         # Update cache
         with cache_lock:
             churches_cache = churches
             last_fetch_time = datetime.now()
+            print(f"Updated cache with {len(churches)} churches")  # Debug print
 
         return churches
     except Exception as e:
-        print(f"Error fetching data from Google Sheets: {e}")
+        print(f"Error fetching data from Google Sheets: {str(e)}")  # Debug print
+        import traceback
+        print(traceback.format_exc())  # Print full stack trace
         return []
 
 # Sample data for fallback
@@ -115,10 +131,13 @@ def default_churches():
     try:
         churches = fetch_churches_from_sheets()
         if not churches:
+            print("No churches fetched, using sample data")  # Debug print
             churches = SAMPLE_CHURCHES
         return jsonify({"success": True, "churches": churches})
     except Exception as e:
-        print(f"Error in default_churches: {e}")
+        print(f"Error in default_churches: {str(e)}")  # Debug print
+        import traceback
+        print(traceback.format_exc())  # Print full stack trace
         return jsonify({"success": True, "churches": SAMPLE_CHURCHES})
 
 @app.route('/refresh-data', methods=['POST'])
@@ -126,11 +145,16 @@ def refresh_data():
     try:
         churches = fetch_churches_from_sheets(force_refresh=True)
         if not churches:
-            return jsonify({"success": False, "error": "Could not fetch data from Google Sheets"})
+            error_msg = "Could not fetch data from Google Sheets"
+            print(error_msg)  # Debug print
+            return jsonify({"success": False, "error": error_msg})
         return jsonify({"success": True, "churches": churches})
     except Exception as e:
+        print(f"Error in refresh_data: {str(e)}")  # Debug print
+        import traceback
+        print(traceback.format_exc())  # Print full stack trace
         return jsonify({"success": False, "error": str(e)})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 5004))  # Changed default port to 5004
+    app.run(host='0.0.0.0', port=port, debug=True)
