@@ -1,33 +1,47 @@
-from flask import Flask, render_template, request, jsonify
 import os
-from dotenv import load_dotenv
-import atexit
+import json
+import threading
+from datetime import datetime
+from functools import wraps
+from flask import Flask, render_template, jsonify, request
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from datetime import datetime
-import threading
-import time
+from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Google Sheets configuration
+# Constants
+SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
+RANGE_NAME = 'Sheet1!A2:F'  # Assuming headers are in row 1
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-SPREADSHEET_ID = '1aAEJCJKnPBmN-oOOSiwtEL6jAyBr1M1o1uj-pFj1taY'  # Your Google Sheet ID
-RANGE_NAME = 'Churches!A2:F'  # Adjust based on your sheet structure
 
-# Cache for churches data
-churches_cache = []
+# Cache variables
+churches_cache = None
 last_fetch_time = None
 cache_lock = threading.Lock()
 
 def get_google_sheets_service():
     try:
-        credentials = service_account.Credentials.from_service_account_file(
-            'service-account.json', scopes=SCOPES)
+        # Check if we have JSON credentials in environment variable
+        creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+        if creds_json:
+            creds_info = json.loads(creds_json)
+        else:
+            # Fallback to service-account.json file
+            creds_path = 'service-account.json'
+            if not os.path.exists(creds_path):
+                print("No credentials found")
+                return None
+            with open(creds_path) as f:
+                creds_info = json.load(f)
+        
+        credentials = service_account.Credentials.from_service_account_info(
+            creds_info, scopes=SCOPES)
         service = build('sheets', 'v4', credentials=credentials)
-        return service
+        return service.spreadsheets()
     except Exception as e:
         print(f"Error setting up Google Sheets service: {e}")
         return None
@@ -45,12 +59,11 @@ def fetch_churches_from_sheets(force_refresh=False):
         if not service:
             return []
 
-        sheet = service.spreadsheets()
-        result = sheet.values().get(
+        sheet = service.values().get(
             spreadsheetId=SPREADSHEET_ID,
             range=RANGE_NAME
         ).execute()
-        values = result.get('values', [])
+        values = sheet.get('values', [])
 
         churches = []
         for row in values:
@@ -81,42 +94,15 @@ def fetch_churches_from_sheets(force_refresh=False):
         print(f"Error fetching data from Google Sheets: {e}")
         return []
 
-# Fallback data in case Google Sheets fails
-FALLBACK_CHURCHES = [
+# Sample data for fallback
+SAMPLE_CHURCHES = [
     {
-        "name": "Nhà thờ Đức Bà Sài Gòn",
+        "name": "Nhà thờ Đức Bà",
         "address": "01 Công xã Paris, Bến Nghé, Quận 1, Thành phố Hồ Chí Minh",
         "lat": 10.7797,
         "lng": 106.6990,
-        "mass_times": "5:30, 17:30"
-    },
-    {
-        "name": "Nhà thờ Tân Định",
-        "address": "289 Hai Bà Trưng, Phường 8, Quận 3, Thành phố Hồ Chí Minh",
-        "lat": 10.7851,
-        "lng": 106.6898,
-        "mass_times": "4:30, 6:00, 17:30, 19:00"
-    },
-    {
-        "name": "Nhà thờ Huyện Sĩ",
-        "address": "1 Tôn Thất Tùng, Phạm Ngũ Lão, Quận 1, Thành phố Hồ Chí Minh",
-        "lat": 10.7703,
-        "lng": 106.6916,
-        "mass_times": "5:30, 17:00"
-    },
-    {
-        "name": "Nhà thờ Chợ Quán",
-        "address": "120 Trần Bình Trọng, Phường 3, Quận 5, Thành phố Hồ Chí Minh",
-        "lat": 10.7597,
-        "lng": 106.6832,
-        "mass_times": "5:00, 18:00"
-    },
-    {
-        "name": "Nhà thờ Thị Nghè",
-        "address": "178 Hai Bà Trưng, Đa Kao, Quận 1, Thành phố Hồ Chí Minh",
-        "lat": 10.7897,
-        "lng": 106.7010,
-        "mass_times": "5:30, 17:30, 19:00"
+        "mass_times": "5:30, 17:30",
+        "last_updated": "2025-04-03"
     }
 ]
 
@@ -127,46 +113,24 @@ def index():
 @app.route('/default-churches', methods=['POST'])
 def default_churches():
     try:
-        data = request.get_json()
-        lat = data.get('lat', 10.7797)  # Default to Notre Dame Cathedral location
-        lng = data.get('lng', 106.6990)
-        
-        # Try to get churches from Google Sheets
         churches = fetch_churches_from_sheets()
-        
-        # If Google Sheets fails, use fallback data
         if not churches:
-            churches = FALLBACK_CHURCHES
-        
-        return jsonify({
-            "success": True,
-            "churches": churches
-        })
+            churches = SAMPLE_CHURCHES
+        return jsonify({"success": True, "churches": churches})
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        print(f"Error in default_churches: {e}")
+        return jsonify({"success": True, "churches": SAMPLE_CHURCHES})
 
 @app.route('/refresh-data', methods=['POST'])
 def refresh_data():
     try:
-        # Force refresh from Google Sheets
         churches = fetch_churches_from_sheets(force_refresh=True)
-        return jsonify({
-            "success": True,
-            "message": "Data refreshed successfully",
-            "churches": churches
-        })
+        if not churches:
+            return jsonify({"success": False, "error": "Could not fetch data from Google Sheets"})
+        return jsonify({"success": True, "churches": churches})
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)})
 
 if __name__ == '__main__':
-    # Initial data fetch
-    fetch_churches_from_sheets()
-    
-    port = int(os.environ.get("PORT", 5002))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)

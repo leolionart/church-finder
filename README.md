@@ -1,58 +1,109 @@
 # Church Finder
 
-Ứng dụng web giúp tìm kiếm nhà thờ và giờ lễ tại Sài Gòn.
+A web application to help users find nearby churches in Vietnam and view their mass schedules.
 
-## Tính năng
+## Features
 
-- Hiển thị bản đồ với vị trí các nhà thờ
-- Lọc nhà thờ theo giờ lễ (4:00 - 6:30 và 17:00 - 20:00)
-- Xem thông tin chi tiết về từng nhà thờ
-- Tự động định vị vị trí người dùng
+- Interactive map interface
+- Real-time location tracking
+- Mass schedule filtering
+- Responsive design for mobile devices
+- Live data updates from Google Sheets
+- Distance-based sorting
+- Accurate geolocation
 
-## Công nghệ sử dụng
+## Tech Stack
 
-- Backend: Flask (Python)
+- Backend: Python Flask
 - Frontend: HTML, CSS, JavaScript
-- Maps: Leaflet.js với OpenStreetMap
-- Deploy: Render.com
+- Map: Leaflet.js
+- Data Source: Google Sheets API
+- Deployment: Render.com
 
-## Cài đặt local
+## Prerequisites
 
-1. Clone repository:
+- Python 3.8+
+- Google Cloud Platform account with Sheets API enabled
+- Service account credentials
+
+## Setup
+
+1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/church-finder.git
 cd church-finder
 ```
 
-2. Tạo và kích hoạt môi trường ảo:
+2. Create and activate virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # trên Unix
-# hoặc
-.\venv\Scripts\activate  # trên Windows
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Cài đặt dependencies:
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Chạy ứng dụng:
+4. Set up environment variables:
+Create a `.env` file in the project root with:
+```
+SPREADSHEET_ID=your_spreadsheet_id
+```
+
+5. Set up Google Sheets API:
+- Create a project in Google Cloud Console
+- Enable Google Sheets API
+- Create a service account and download credentials
+- Save the credentials as `service-account.json` in the project root
+- Share your Google Sheet with the service account email
+
+6. Run the application:
 ```bash
 python app.py
 ```
 
-5. Truy cập http://localhost:5002
+## Google Sheet Structure
 
-## Deploy lên Render.com
+The application expects your Google Sheet to have the following columns:
+1. Name - Church name
+2. Address - Full address
+3. Latitude - Decimal degrees (e.g., 10.7797)
+4. Longitude - Decimal degrees (e.g., 106.6990)
+5. Mass Times - Comma-separated times (e.g., "5:30, 17:30")
+6. Last Updated - Date of last update
 
-1. Tạo tài khoản trên Render.com
-2. Tạo Web Service mới và kết nối với GitHub repository
-3. Cấu hình như sau:
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn app:app`
-   - Python Version: 3.8.0
-4. Click "Create Web Service"
+## Deployment
+
+The application is configured for deployment on Render.com:
+
+1. Create a new Web Service
+2. Connect your repository
+3. Set environment variables:
+   - `SPREADSHEET_ID`
+   - Add the contents of `service-account.json` as `GOOGLE_APPLICATION_CREDENTIALS_JSON`
+4. Deploy!
+
+## Development
+
+To run the application in development mode:
+```bash
+export FLASK_ENV=development
+export FLASK_APP=app.py
+flask run
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Cấu trúc dự án
 

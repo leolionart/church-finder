@@ -1,0 +1,31 @@
+2025-04-03 17:09:43,821 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-04-03 17:09:43,829 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-04-03 17:09:43,844 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-04-03 17:09:43,845 - apscheduler.scheduler - INFO - Added job "Update church data from Google Sheets" to job store "default"
+2025-04-03 17:09:43,845 - apscheduler.scheduler - INFO - Scheduler started
+2025-04-03 17:09:43,845 - auto_updater - INFO - Scheduler started successfully
+2025-04-03 17:09:43,846 - auto_updater - INFO - Starting data update at 2025-04-03 17:09:43
+2025-04-03 17:09:44,738 - auto_updater - INFO - Successfully imported 0 churches
+2025-04-03 17:09:44,751 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5002
+2025-04-03 17:09:44,752 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-04-03 17:09:44,753 - werkzeug - INFO -  * Restarting with stat
+2025-04-03 17:09:44,995 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-04-03 17:09:45,002 - googleapiclient.discovery_cache - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-04-03 17:09:45,014 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-04-03 17:09:45,014 - apscheduler.scheduler - INFO - Added job "Update church data from Google Sheets" to job store "default"
+2025-04-03 17:09:45,014 - apscheduler.scheduler - INFO - Scheduler started
+2025-04-03 17:09:45,014 - auto_updater - INFO - Scheduler started successfully
+2025-04-03 17:09:45,014 - auto_updater - INFO - Starting data update at 2025-04-03 17:09:45
+2025-04-03 17:09:45,663 - auto_updater - INFO - Successfully imported 0 churches
+2025-04-03 17:09:45,666 - werkzeug - WARNING -  * Debugger is active!
+2025-04-03 17:09:45,673 - werkzeug - INFO -  * Debugger PIN: 383-197-793
+2025-04-03 17:10:03,768 - werkzeug - INFO - 127.0.0.1 - - [03/Apr/2025 17:10:03] "GET /update-status HTTP/1.1" 200 -
+2025-04-03 17:10:09,210 - werkzeug - INFO - 127.0.0.1 - - [03/Apr/2025 17:10:09] "GET /?vscodeBrowserReqId=1743675009186 HTTP/1.1" 200 -
+2025-04-03 17:10:09,246 - werkzeug - INFO - 127.0.0.1 - - [03/Apr/2025 17:10:09] "[36mGET /static/script.js HTTP/1.1[0m" 304 -
+2025-04-03 17:10:09,246 - werkzeug - INFO - 127.0.0.1 - - [03/Apr/2025 17:10:09] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-04-03 17:10:09,278 - werkzeug - INFO - 127.0.0.1 - - [03/Apr/2025 17:10:09] "[35m[1mPOST /default-churches HTTP/1.1[0m" 500 -
+2025-04-03 17:12:20,108 - werkzeug - INFO -  * Detected change in '/Users/leolion/Documents/CODING/church_finder/auto_updater.py', reloading
+2025-04-03 17:12:20,111 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-04-03 17:12:20,112 - auto_updater - INFO - Scheduler stopped successfully
+2025-04-03 17:12:20,203 - werkzeug - INFO -  * Restarting with stat
