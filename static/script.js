@@ -68,6 +68,42 @@ async function loadDefaultChurches(lat, lng) {
     }
 }
 
+// Refresh church data
+async function refreshChurchData() {
+    const refreshBtn = document.getElementById('refreshData');
+    refreshBtn.classList.add('loading');
+    refreshBtn.disabled = true;
+
+    try {
+        const response = await fetch('/refresh-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            allChurches = data.churches;
+            // Re-apply current time filter if any
+            if (selectedTime) {
+                filterChurches(selectedTime);
+            } else {
+                displayChurches(allChurches);
+            }
+            alert('Dữ liệu đã được cập nhật thành công!');
+        } else {
+            throw new Error(data.error || 'Không thể cập nhật dữ liệu');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Lỗi khi cập nhật dữ liệu: ' + error.message);
+    } finally {
+        refreshBtn.classList.remove('loading');
+        refreshBtn.disabled = false;
+    }
+}
+
 // Filter churches by time
 function filterChurches(time) {
     if (!time) {
@@ -123,6 +159,7 @@ function displayChurches(churches) {
                 <h3>${church.name}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${church.address}</p>
                 ${church.mass_times ? `<p><i class="fas fa-clock"></i> Giờ lễ: ${church.mass_times}</p>` : ''}
+                ${church.last_updated ? `<p><i class="fas fa-calendar-alt"></i> Cập nhật: ${church.last_updated}</p>` : ''}
             </div>
         `);
 
@@ -135,6 +172,7 @@ function displayChurches(churches) {
             <h3>${church.name}</h3>
             <p><i class="fas fa-map-marker-alt"></i> ${church.address}</p>
             ${church.mass_times ? `<p><i class="fas fa-clock"></i> Giờ lễ: ${church.mass_times}</p>` : ''}
+            ${church.last_updated ? `<p><i class="fas fa-calendar-alt"></i> Cập nhật: ${church.last_updated}</p>` : ''}
             <button onclick="focusChurch(${index})" class="focus-btn">
                 <i class="fas fa-map-marked-alt"></i> Xem trên bản đồ
             </button>
@@ -186,4 +224,8 @@ function initTimeFilter() {
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     initTimeFilter();
+    
+    // Add refresh button handler
+    const refreshBtn = document.getElementById('refreshData');
+    refreshBtn.addEventListener('click', refreshChurchData);
 });

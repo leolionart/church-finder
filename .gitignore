@@ -7,11 +7,18 @@ venv/
 # Environment variables
 .env
 
+# Google API credentials
+service-account.json
+
+# IDE
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+
 # Logs
 *.log
-
-# Service account
-service-account.json
 
 # Local data
 churches_data.json
