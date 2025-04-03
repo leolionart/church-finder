@@ -4,6 +4,8 @@
     --border-color: #DDDDDD;
     --background-gray: #F7F7F7;
     --shadow-color: rgba(0, 0, 0, 0.1);
+    --header-height: 80px;
+    --panel-width: 400px;
 }
 
 * {
@@ -16,6 +18,7 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     color: var(--text-color);
     line-height: 1.5;
+    overflow: hidden;
 }
 
 /* Header */
@@ -24,7 +27,7 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: 80px;
+    height: var(--header-height);
     background: white;
     box-shadow: 0 1px 2px var(--shadow-color);
     z-index: 1000;
@@ -76,23 +79,26 @@ body {
 /* Main container */
 .main-container {
     display: flex;
-    height: calc(100vh - 80px);
-    margin-top: 80px;
+    height: calc(100vh - var(--header-height));
+    margin-top: var(--header-height);
 }
 
 /* Map */
 #map {
     flex: 1;
     height: 100%;
+    z-index: 1;
 }
 
 /* Churches Panel */
 .search-panel {
-    width: 400px;
+    width: var(--panel-width);
     height: 100%;
     background: white;
     box-shadow: -2px 0 4px var(--shadow-color);
     overflow-y: auto;
+    transition: transform 0.3s ease;
+    z-index: 2;
 }
 
 .search-panel-header {
@@ -100,6 +106,9 @@ body {
     border-bottom: 1px solid var(--border-color);
     background-color: var(--primary-color);
     color: white;
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 .search-panel-header h4 {
@@ -239,6 +248,22 @@ body {
     color: #4A90E2;
     font-size: 16px;
     text-align: center;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Popup Styling */
@@ -262,19 +287,103 @@ body {
     color: var(--primary-color);
 }
 
+/* Toggle Panel Button (Mobile) */
+.toggle-panel {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    z-index: 1000;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.toggle-panel:hover {
+    background-color: #e63147;
+}
+
+.toggle-panel i {
+    font-size: 20px;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
-    .search-panel {
-        position: fixed;
-        top: 80px;
-        right: 0;
-        width: 100%;
-        height: calc(100vh - 80px);
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
+    :root {
+        --header-height: 60px;
+    }
+
+    body {
+        overflow: hidden;
+    }
+
+    .app-header {
+        padding: 0 16px;
     }
 
     .logo {
         font-size: 20px;
+    }
+
+    .refresh-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .search-panel {
+        position: fixed;
+        top: var(--header-height);
+        right: 0;
+        width: 100%;
+        height: calc(100vh - var(--header-height));
+        transform: translateX(100%);
+    }
+
+    .search-panel.active {
+        transform: translateX(0);
+    }
+
+    .toggle-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .time-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .time-pill {
+        font-size: 12px;
+        padding: 4px 10px;
+        margin: 0;
+    }
+
+    .church-card {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .church-card h3 {
+        font-size: 16px;
+        margin-bottom: 8px;
+    }
+
+    .church-card p {
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+    .focus-btn {
+        padding: 6px 12px;
+        font-size: 13px;
     }
 }

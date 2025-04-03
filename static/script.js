@@ -1,49 +1,112 @@
 let map;
 let userMarker;
+let userLocation = null;
+let watchId = null;
 let churchMarkers = [];
 let allChurches = [];
 let selectedTime = null;
+let isPanelVisible = false;
+const defaultLocation = { lat: 10.7769, lng: 106.7009 }; // Ho Chi Minh City center
+
+// Calculate distance between two points in km
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI/180);
+}
+
+// Format distance
+function formatDistance(distance) {
+    if (distance < 1) {
+        return Math.round(distance * 1000) + 'm';
+    }
+    return Math.round(distance * 10) / 10 + 'km';
+}
 
 // Initialize map
 function initMap() {
-    map = L.map('map').setView([10.7769, 106.7009], 13); // Default to Ho Chi Minh City
+    map = L.map('map').setView([defaultLocation.lat, defaultLocation.lng], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: ' OpenStreetMap contributors'
     }).addTo(map);
 
-    // Get user's location
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
-                map.setView([pos.lat, pos.lng], 13);
-                if (userMarker) {
-                    userMarker.setLatLng([pos.lat, pos.lng]);
-                } else {
-                    userMarker = L.marker([pos.lat, pos.lng], {
-                        icon: L.divIcon({
-                            className: 'user-marker',
-                            html: '<i class="fas fa-circle"></i>',
-                            iconSize: [20, 20]
-                        })
-                    }).addTo(map);
-                }
-                // Load default churches after getting user location
-                loadDefaultChurches(pos.lat, pos.lng);
-            },
-            () => {
-                console.log("Error: The Geolocation service failed.");
-                // Load default churches with Ho Chi Minh City center coordinates
-                loadDefaultChurches(10.7769, 106.7009);
-            }
-        );
-    } else {
-        // Load default churches with Ho Chi Minh City center coordinates
-        loadDefaultChurches(10.7769, 106.7009);
+    // Start watching user's location
+    startLocationWatch();
+}
+
+// Start watching user's location
+function startLocationWatch() {
+    if (!navigator.geolocation) {
+        console.log("Geolocation is not supported by this browser.");
+        loadDefaultChurches(defaultLocation.lat, defaultLocation.lng);
+        return;
     }
+
+    // Options for high accuracy
+    const options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    };
+
+    // Watch position
+    watchId = navigator.geolocation.watchPosition(
+        updateUserLocation,
+        handleLocationError,
+        options
+    );
+}
+
+// Update user location
+function updateUserLocation(position) {
+    const pos = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy
+    };
+
+    userLocation = pos;
+
+    // Update or create user marker with accuracy circle
+    if (userMarker) {
+        userMarker.setLatLng([pos.lat, pos.lng]);
+    } else {
+        userMarker = L.marker([pos.lat, pos.lng], {
+            icon: L.divIcon({
+                className: 'user-marker',
+                html: '<i class="fas fa-circle"></i>',
+                iconSize: [20, 20]
+            })
+        }).addTo(map);
+
+        // Add popup to user marker
+        userMarker.bindPopup('Vị trí của bạn');
+    }
+
+    // Center map on first location fix
+    if (!map.userLocationInitialized) {
+        map.setView([pos.lat, pos.lng], 15);
+        map.userLocationInitialized = true;
+    }
+
+    // Load and sort churches by distance
+    loadDefaultChurches(pos.lat, pos.lng);
+}
+
+// Handle location errors
+function handleLocationError(error) {
+    console.log("Error getting location:", error);
+    loadDefaultChurches(defaultLocation.lat, defaultLocation.lng);
 }
 
 // Load default churches
@@ -59,9 +122,19 @@ async function loadDefaultChurches(lat, lng) {
 
         const data = await response.json();
         if (data.success) {
-            allChurches = data.churches;
-            displayChurches(allChurches);
-            document.getElementById('resultsTitle').textContent = 'Nhà thờ gần đây';
+            allChurches = data.churches.map(church => ({
+                ...church,
+                distance: calculateDistance(lat, lng, church.lat, church.lng)
+            }));
+            
+            // Sort churches by distance
+            allChurches.sort((a, b) => a.distance - b.distance);
+            
+            if (selectedTime) {
+                filterChurches(selectedTime);
+            } else {
+                displayChurches(allChurches);
+            }
         }
     } catch (error) {
         console.error('Error:', error);
@@ -84,8 +157,16 @@ async function refreshChurchData() {
 
         const data = await response.json();
         if (data.success) {
-            allChurches = data.churches;
-            // Re-apply current time filter if any
+            if (userLocation) {
+                allChurches = data.churches.map(church => ({
+                    ...church,
+                    distance: calculateDistance(userLocation.lat, userLocation.lng, church.lat, church.lng)
+                }));
+                allChurches.sort((a, b) => a.distance - b.distance);
+            } else {
+                allChurches = data.churches;
+            }
+
             if (selectedTime) {
                 filterChurches(selectedTime);
             } else {
@@ -158,6 +239,7 @@ function displayChurches(churches) {
             <div class="church-popup">
                 <h3>${church.name}</h3>
                 <p><i class="fas fa-map-marker-alt"></i> ${church.address}</p>
+                ${church.distance ? `<p><i class="fas fa-route"></i> Cách ${formatDistance(church.distance)}</p>` : ''}
                 ${church.mass_times ? `<p><i class="fas fa-clock"></i> Giờ lễ: ${church.mass_times}</p>` : ''}
                 ${church.last_updated ? `<p><i class="fas fa-calendar-alt"></i> Cập nhật: ${church.last_updated}</p>` : ''}
             </div>
@@ -171,6 +253,7 @@ function displayChurches(churches) {
         card.innerHTML = `
             <h3>${church.name}</h3>
             <p><i class="fas fa-map-marker-alt"></i> ${church.address}</p>
+            ${church.distance ? `<p><i class="fas fa-route"></i> Cách ${formatDistance(church.distance)}</p>` : ''}
             ${church.mass_times ? `<p><i class="fas fa-clock"></i> Giờ lễ: ${church.mass_times}</p>` : ''}
             ${church.last_updated ? `<p><i class="fas fa-calendar-alt"></i> Cập nhật: ${church.last_updated}</p>` : ''}
             <button onclick="focusChurch(${index})" class="focus-btn">
@@ -180,9 +263,19 @@ function displayChurches(churches) {
         churchList.appendChild(card);
     });
 
-    // Fit map to show all markers if there are any
+    // Update results title with distance if available
+    if (userLocation) {
+        document.getElementById('resultsTitle').textContent = 
+            selectedTime ? 
+            `Nhà thờ có lễ lúc ${selectedTime} (${churches.length})` :
+            `Nhà thờ gần bạn (${churches.length})`;
+    }
+
+    // Fit map to show all markers and user location if available
     if (churchMarkers.length > 0) {
-        const group = new L.featureGroup(churchMarkers);
+        const markers = [...churchMarkers];
+        if (userMarker) markers.push(userMarker);
+        const group = new L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.1));
     }
 }
@@ -193,6 +286,25 @@ function focusChurch(index) {
     if (marker) {
         map.setView(marker.getLatLng(), 16);
         marker.openPopup();
+        // On mobile, close the panel after focusing
+        if (window.innerWidth <= 768) {
+            togglePanel();
+        }
+    }
+}
+
+// Toggle panel visibility on mobile
+function togglePanel() {
+    const panel = document.getElementById('churchesPanel');
+    const toggleBtn = document.getElementById('togglePanel');
+    isPanelVisible = !isPanelVisible;
+    
+    if (isPanelVisible) {
+        panel.classList.add('active');
+        toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+    } else {
+        panel.classList.remove('active');
+        toggleBtn.innerHTML = '<i class="fas fa-list"></i>';
     }
 }
 
@@ -220,6 +332,13 @@ function initTimeFilter() {
     });
 }
 
+// Clean up when page unloads
+window.addEventListener('beforeunload', () => {
+    if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+    }
+});
+
 // Initialize everything when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
@@ -228,4 +347,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add refresh button handler
     const refreshBtn = document.getElementById('refreshData');
     refreshBtn.addEventListener('click', refreshChurchData);
+
+    // Add toggle panel button handler
+    const toggleBtn = document.getElementById('togglePanel');
+    toggleBtn.addEventListener('click', togglePanel);
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768 && isPanelVisible) {
+            document.getElementById('churchesPanel').classList.remove('active');
+            toggleBtn.innerHTML = '<i class="fas fa-list"></i>';
+            isPanelVisible = false;
+        }
+    });
 });
