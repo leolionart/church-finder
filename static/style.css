@@ -1,0 +1,292 @@
+:root {
+    --primary-color: #FF385C;
+    --text-color: #222222;
+    --border-color: #DDDDDD;
+    --background-gray: #F7F7F7;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+/* Header */
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: white;
+    box-shadow: 0 1px 2px var(--shadow-color);
+    z-index: 1000;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+/* Main container */
+.main-container {
+    display: flex;
+    height: calc(100vh - 80px);
+    margin-top: 80px;
+}
+
+/* Map */
+#map {
+    flex: 1;
+    height: 100%;
+}
+
+/* Search Panel */
+.search-panel {
+    width: 450px;
+    height: 100%;
+    background: white;
+    box-shadow: -2px 0 4px var(--shadow-color);
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.search-panel.hidden {
+    transform: translateX(100%);
+}
+
+.search-panel-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.search-panel-header h4 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #666;
+}
+
+.search-panel-content {
+    padding: 24px;
+}
+
+/* Search Filters */
+.search-filters {
+    margin-bottom: 32px;
+}
+
+.filter-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.time-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.time-pill {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.time-pill:hover {
+    border-color: var(--text-color);
+}
+
+.time-pill.active {
+    background: var(--text-color);
+    color: white;
+    border-color: var(--text-color);
+}
+
+.custom-time {
+    margin-top: 16px;
+}
+
+.custom-time input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.search-btn {
+    width: 100%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: background-color 0.2s;
+}
+
+.search-btn:hover {
+    background-color: #E31C5F;
+}
+
+/* Results Section */
+.section-title {
+    margin-bottom: 16px;
+}
+
+.section-title h5 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.church-grid {
+    display: grid;
+    grid-template-columns: 1;
+    gap: 24px;
+}
+
+.church-item {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.church-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.church-image {
+    width: 100%;
+    height: 200px;
+    background: var(--background-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.church-image i {
+    font-size: 48px;
+    color: #999;
+}
+
+.church-info {
+    padding: 16px;
+}
+
+.church-info h5 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.church-info p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.church-info i {
+    width: 16px;
+    margin-right: 8px;
+}
+
+/* Search Toggle Button */
+.search-toggle-btn {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    padding: 12px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.search-toggle-btn:hover {
+    border-color: var(--text-color);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .search-panel {
+        position: fixed;
+        top: 80px;
+        right: 0;
+        width: 100%;
+        height: calc(100vh - 80px);
+        z-index: 1000;
+    }
+    
+    .app-header {
+        height: 60px;
+        padding: 0 16px;
+    }
+    
+    .main-container {
+        margin-top: 60px;
+        height: calc(100vh - 60px);
+    }
+    
+    .logo {
+        font-size: 20px;
+    }
+}
+
+/* Map Markers */
+.leaflet-div-icon {
+    background: none;
+    border: none;
+}
+
+.leaflet-marker-icon .fa-circle {
+    color: var(--primary-color);
+    font-size: 14px;
+}
+
+/* No Results Message */
+.no-results {
+    text-align: center;
+    padding: 32px;
+    color: #666;
+}
+
+.no-results i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #999;
+}

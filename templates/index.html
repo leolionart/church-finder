@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church Finder - Tìm nhà thờ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <h1 class="logo">Church Finder</h1>
+        <button id="searchToggle" class="search-toggle-btn">
+            <i class="fas fa-search"></i> Tìm kiếm
+        </button>
+    </header>
+
+    <!-- Main container -->
+    <div class="main-container">
+        <!-- Map -->
+        <div id="map"></div>
+
+        <!-- Search Panel -->
+        <div id="searchPanel" class="search-panel">
+            <div class="search-panel-header">
+                <h4>Tìm nhà thờ</h4>
+                <button class="close-btn" onclick="toggleSearchPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="search-panel-content">
+                <!-- Search Filters -->
+                <div class="search-filters">
+                    <label class="filter-label">Chọn giờ lễ:</label>
+                    <div class="time-pills">
+                        <button class="time-pill" data-time="05:00">5:00</button>
+                        <button class="time-pill" data-time="06:00">6:00</button>
+                        <button class="time-pill" data-time="17:00">17:00</button>
+                        <button class="time-pill" data-time="18:00">18:00</button>
+                        <button class="time-pill" data-time="19:00">19:00</button>
+                    </div>
+                    
+                    <div class="custom-time">
+                        <input type="time" id="timeSlot" placeholder="Chọn giờ khác">
+                    </div>
+                    
+                    <button onclick="searchChurches()" class="search-btn">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                </div>
+
+                <!-- Results Section -->
+                <div class="results-section">
+                    <div class="section-title">
+                        <h5 id="resultsTitle">Nhà thờ gần đây</h5>
+                    </div>
+                    <div id="churchList" class="church-grid">
+                        <!-- Churches will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
