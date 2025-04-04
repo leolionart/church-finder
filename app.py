@@ -27,29 +27,12 @@ cache_lock = threading.Lock()
 
 def get_google_sheets_service():
     try:
-        # Check if we have JSON credentials in environment variable
-        creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-        if creds_json:
-            print("Using credentials from environment variable")  # Debug print
-            creds_info = json.loads(creds_json)
-        else:
-            # Fallback to service-account.json file
-            creds_path = 'service-account.json'
-            if not os.path.exists(creds_path):
-                print("No credentials found - service-account.json is missing")  # Debug print
-                return None
-            print(f"Using credentials from {creds_path}")  # Debug print
-            with open(creds_path) as f:
-                creds_info = json.load(f)
-        
-        credentials = service_account.Credentials.from_service_account_info(
-            creds_info, scopes=SCOPES)
+        credentials = service_account.Credentials.from_service_account_file(
+            'service-account.json', scopes=SCOPES)
         service = build('sheets', 'v4', credentials=credentials)
-        return service.spreadsheets()
+        return service
     except Exception as e:
-        print(f"Error setting up Google Sheets service: {str(e)}")  # Debug print
-        import traceback
-        print(traceback.format_exc())  # Print full stack trace
+        print(f"Error creating Google Sheets service: {e}")
         return None
 
 def fetch_churches_from_sheets(force_refresh=False):
