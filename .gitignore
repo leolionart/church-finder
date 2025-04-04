@@ -38,6 +38,10 @@ service-account.json
 *.swp
 *.swo
 
+# Docker
+.docker/
+docker-compose.override.yml
+
 # OS
 .DS_Store
 Thumbs.db

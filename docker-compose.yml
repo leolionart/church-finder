@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5004:5004"
+    environment:
+      - SPREADSHEET_ID=${SPREADSHEET_ID}
+      - GOOGLE_APPLICATION_CREDENTIALS_JSON=${GOOGLE_APPLICATION_CREDENTIALS_JSON}
+    volumes:
+      - ./churches_data.json:/app/churches_data.json
+    restart: unless-stopped
