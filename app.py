@@ -30,7 +30,7 @@ def get_google_sheets_service():
         credentials = service_account.Credentials.from_service_account_file(
             'service-account.json', scopes=SCOPES)
         service = build('sheets', 'v4', credentials=credentials)
-        return service
+        return service.spreadsheets()
     except Exception as e:
         print(f"Error creating Google Sheets service: {e}")
         return None
