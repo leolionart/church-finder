@@ -11,3 +11,5 @@ services:
         sync: false
       - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
         sync: false
+    healthCheckPath: /
+    autoDeploy: true

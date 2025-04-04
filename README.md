@@ -75,14 +75,36 @@ The application expects your Google Sheet to have the following columns:
 
 ## Deployment
 
-The application is configured for deployment on Render.com:
+### Deploying to Render.com
 
-1. Create a new Web Service
-2. Connect your repository
-3. Set environment variables:
-   - `SPREADSHEET_ID`
-   - Add the contents of `service-account.json` as `GOOGLE_APPLICATION_CREDENTIALS_JSON`
-4. Deploy!
+1. Create an account on [Render.com](https://render.com)
+2. Connect your GitHub repository to Render
+3. Click "New +" and select "Web Service"
+4. Choose your repository
+5. Fill in the following settings:
+   - Name: `church-finder` (or your preferred name)
+   - Environment: `Python`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn app:app`
+
+6. Add the following environment variables:
+   - `SPREADSHEET_ID`: Your Google Sheets ID
+   - `GOOGLE_APPLICATION_CREDENTIALS_JSON`: The entire contents of your service-account.json file (as a string)
+
+7. Click "Create Web Service"
+
+The application will be automatically deployed and available at the URL provided by Render.
+
+### Updating the Deployment
+
+The application will automatically redeploy when you push changes to the main branch of your GitHub repository.
+
+### Troubleshooting
+
+1. If the application fails to start, check the logs in the Render dashboard
+2. Ensure all environment variables are properly set
+3. Make sure the Google service account has access to your spreadsheet
+4. Check that the spreadsheet ID is correct
 
 ## Development
 
