@@ -42,3 +42,9 @@ docker-compose.override.yml
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+
+# Playwright MCP
+.playwright-mcp/
